@@ -8,6 +8,14 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
 
+    <!-- دعم التثبيت على آيفون (Safari) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="شام كاش">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Tajawal -->
@@ -184,6 +192,9 @@
                 </button>
                 <button id="login-bio-btn" type="button" onclick="loginWithBiometric()" class="hidden w-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg active:scale-95 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-fingerprint text-lg text-emerald-400"></i> دخول بالبصمة / الوجه
+                </button>
+                <button id="login-pin-btn" type="button" onclick="loginWithPin()" class="hidden w-full bg-sky-700 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-grip text-lg text-sky-200"></i> دخول برمز PIN
                 </button>
                 <div id="login-error" class="text-rose-600 text-xs font-bold text-center hidden">كلمة المرور غير صحيحة!</div>
                 <button type="button" onclick="forgotPassword()" class="w-full text-center text-[11px] font-bold text-sky-600 hover:text-sky-500 underline decoration-dotted underline-offset-2 transition mt-1">
@@ -570,6 +581,10 @@
                     <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1"><i class="fa-brands fa-whatsapp text-green-500"></i> رقم هاتف المدين (اختياري):</label>
                     <input type="tel" id="save-debtor-phone" placeholder="مثال: 0912345678" class="w-full text-right font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-xs outline-none focus:border-emerald-600">
                 </div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1"><i class="fa-solid fa-calendar-day text-rose-500"></i> تاريخ استحقاق الدين (اختياري):</label>
+                    <input type="date" id="save-due-date" class="w-full text-right font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-xs outline-none focus:border-emerald-600">
+                </div>
             </div>
 
             <div class="flex gap-2">
@@ -693,6 +708,12 @@
                             <button onclick="toggleBiometric();closeMoreMenu()" class="w-full text-right text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-2">
                                 <i class="fa-solid fa-fingerprint text-emerald-500 w-4 text-center"></i> <span id="bio-menu-label">تفعيل الدخول بالبصمة</span>
                             </button>
+                            <button onclick="setupPin();closeMoreMenu()" class="w-full text-right text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-2">
+                                <i class="fa-solid fa-grip text-sky-500 w-4 text-center"></i> <span id="pin-menu-label">تعيين رمز دخول سريع (PIN)</span>
+                            </button>
+                            <button id="install-app-btn" onclick="installApp();closeMoreMenu()" class="hidden w-full text-right text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-2">
+                                <i class="fa-solid fa-download text-blue-500 w-4 text-center"></i> تثبيت التطبيق
+                            </button>
                             <button onclick="openToolbarSettings();closeMoreMenu()" class="w-full text-right text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-2">
                                 <i class="fa-solid fa-sliders text-slate-500 w-4 text-center"></i> تخصيص الأزرار
                             </button>
@@ -714,6 +735,28 @@
             <button onclick="switchTab('sell')" id="btn-tab-sell" class="flex-1 py-3 px-4 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-sm">
                 <i class="fa-solid fa-tag"></i> عمليات البيع
             </button>
+        </div>
+
+        <!-- ================= ملخّص اليوم السريع ================= -->
+        <div class="bg-slate-50 dark:bg-slate-900 px-3 pt-2 pb-1 border-x border-slate-200 dark:border-slate-800 no-export">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="daily-summary-strip">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-2 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 mb-0.5"><i class="fa-solid fa-receipt text-sky-500"></i> عمليات اليوم</p>
+                    <strong id="ds-count" class="text-sm font-black text-slate-800 dark:text-white">0</strong>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-2 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 mb-0.5"><i class="fa-solid fa-sack-dollar text-emerald-500"></i> أرباح اليوم</p>
+                    <strong id="ds-profit" class="text-sm font-black text-emerald-700 dark:text-emerald-300">0</strong>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-2 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 mb-0.5"><i class="fa-solid fa-hand-holding-dollar text-amber-500"></i> ديون مفتوحة</p>
+                    <strong id="ds-debts" class="text-sm font-black text-amber-700 dark:text-amber-300">0</strong>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-2 text-center">
+                    <p class="text-[9px] font-bold text-slate-400 mb-0.5"><i class="fa-solid fa-triangle-exclamation text-rose-500"></i> ديون متأخّرة</p>
+                    <strong id="ds-overdue" class="text-sm font-black text-rose-700 dark:text-rose-300">0</strong>
+                </div>
+            </div>
         </div>
 
         <!-- ================= شريط الأجور ================= -->
@@ -1090,6 +1133,11 @@
                 if (getBioCredential(val)) bioBtn.classList.remove('hidden');
                 else bioBtn.classList.add('hidden');
             }
+            const pinBtn = document.getElementById('login-pin-btn');
+            if (pinBtn) {
+                if (getPin(val)) pinBtn.classList.remove('hidden');
+                else pinBtn.classList.add('hidden');
+            }
         }
 
         function performLogin() {
@@ -1149,6 +1197,10 @@
                 return;
             }
             if (!bioSupported()) { alert('الجهاز أو المتصفّح لا يدعم البصمة/الوجه. تأكد من فتح التطبيق عبر HTTPS أو كتطبيق مثبّت.'); return; }
+            if (!window.isSecureContext) {
+                alert('لا يمكن تفعيل البصمة هنا؛ المتصفّح يرفض البصمة على المواقع غير الآمنة (شهادة TLS غير صالحة / اتصال غير مشفّر).\n\nالحل: افتح التطبيق عبر رابط https بشهادة صالحة، أو عبر http://localhost، أو ثبّته كتطبيق (PWA).\n\nكبديل يعمل في كل الحالات: فعّل «رمز الدخول السريع PIN» من قائمة المزيد.');
+                return;
+            }
             try {
                 const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
                 if (!avail) { alert('لا توجد بصمة / تعرّف وجه متاح على هذا الجهاز.'); return; }
@@ -1176,6 +1228,54 @@
         function refreshBioMenuLabel() {
             const lbl = document.getElementById('bio-menu-label');
             if (lbl && currentUser) lbl.innerText = getBioCredential(currentUser.username) ? 'إلغاء الدخول بالبصمة' : 'تفعيل الدخول بالبصمة';
+            const plbl = document.getElementById('pin-menu-label');
+            if (plbl && currentUser) plbl.innerText = getPin(currentUser.username) ? 'تغيير / إلغاء رمز الدخول السريع (PIN)' : 'تعيين رمز دخول سريع (PIN)';
+        }
+
+        /* ===== رمز الدخول السريع PIN (بديل يعمل في كل البيئات) ===== */
+        function pinKey(username) { return 'smart_pin_' + username; }
+        function hashPin(s) { let h = 5381; for (let i = 0; i < s.length; i++) { h = ((h << 5) + h) + s.charCodeAt(i); h = h & 0xffffffff; } return 'h' + (h >>> 0).toString(16); }
+        function getPin(username) { try { return localStorage.getItem(pinKey(username)); } catch (e) { return null; } }
+
+        function setupPin() {
+            if (!currentUser) { alert('يرجى تسجيل الدخول أولاً.'); return; }
+            const u = currentUser.username;
+            if (getPin(u)) {
+                if (!confirm('يوجد رمز PIN مفعّل لهذا الحساب.\n\nاضغط «موافق» لتغييره، أو «إلغاء» ثم اتركه فارغاً لحذفه.')) {
+                    if (confirm('هل تريد حذف رمز PIN لهذا الحساب؟')) {
+                        localStorage.removeItem(pinKey(u)); alert('تم حذف رمز الدخول السريع.'); refreshBioMenuLabel();
+                    }
+                    return;
+                }
+            }
+            const p1 = prompt('أدخل رمز دخول سريع (4 إلى 6 أرقام):', '');
+            if (p1 === null) return;
+            const pin = p1.trim();
+            if (!/^[0-9]{4,6}$/.test(pin)) { alert('الرمز يجب أن يكون من 4 إلى 6 أرقام.'); return; }
+            const p2 = prompt('أعد إدخال الرمز للتأكيد:', '');
+            if (p2 === null) return;
+            if (p2.trim() !== pin) { alert('الرمزان غير متطابقين.'); return; }
+            localStorage.setItem(pinKey(u), hashPin(pin));
+            alert('تم تعيين رمز الدخول السريع بنجاح. يمكنك استخدامه من شاشة تسجيل الدخول.');
+            refreshBioMenuLabel();
+        }
+
+        function loginWithPin() {
+            const val = document.getElementById('login-user-select').value;
+            const stored = getPin(val);
+            const errorDiv = document.getElementById('login-error');
+            if (!stored) { alert('لا يوجد رمز PIN لهذا الحساب.'); return; }
+            const p = prompt('أدخل رمز الدخول السريع:', '');
+            if (p === null) return;
+            if (hashPin(p.trim()) !== stored) { errorDiv.classList.remove('hidden'); alert('رمز PIN غير صحيح.'); return; }
+            if (val === 'admin') {
+                currentUser = { username: 'admin', name: 'مدير المركز (أغيد)', isAdmin: true };
+                finishLogin();
+            } else {
+                const emp = getEmployeesList().find(e => e.username === val);
+                if (emp) { currentUser = { username: emp.username, name: emp.name, isAdmin: false }; finishLogin(); }
+                else { alert('الحساب لم يعد موجوداً.'); localStorage.removeItem(pinKey(val)); }
+            }
         }
 
         async function loginWithBiometric() {
@@ -1228,6 +1328,7 @@
             showRatesUpdated();
             resetIdleTimer();
             refreshBioMenuLabel();
+            updateDailySummary();
         }
 
         function logout() {
@@ -2039,6 +2140,7 @@
                 document.getElementById('customer-name-input').value = "";
                 document.getElementById('save-paid-input').value = "";
                 document.getElementById('save-debtor-phone').value = "";
+                var _dd = document.getElementById('save-due-date'); if (_dd) _dd.value = "";
                 setPayStatus('full');
                 document.getElementById('customer-name-input').focus();
             }
@@ -2088,6 +2190,7 @@
             else if (currentPayStatus === 'credit') { paid = 0; remaining = totalDue; }
             else { paid = parseVal(document.getElementById('save-paid-input').value); if (paid > totalDue) paid = totalDue; if (paid < 0) paid = 0; remaining = Math.max(0, totalDue - paid); }
             const debtorPhone = (document.getElementById('save-debtor-phone').value || '').trim();
+            const dueDate = (currentPayStatus === 'full') ? '' : ((document.getElementById('save-due-date').value || '').trim());
 
             let recordData = {
                 id: Date.now(),
@@ -2102,6 +2205,7 @@
                 paid: paid,
                 remaining: remaining,
                 debtorPhone: debtorPhone,
+                dueDate: dueDate,
                 payments: [],
                 data: {}
             };
@@ -2121,6 +2225,7 @@
 
             toggleSaveModal();
             updateDebtsBadge();
+            if (typeof updateDailySummary === 'function') updateDailySummary();
             if (remaining > 0) {
                 alert("تم الحفظ! المبلغ المتبقي ديناً: " + formatNum(remaining, 0) + " ل.س — سجّل في دفتر الديون.");
             } else {
@@ -2188,6 +2293,7 @@
                 localStorage.setItem('smart_calc_history_all', JSON.stringify(allHistory));
                 renderHistoryList();
                 updateDebtsBadge();
+                if (typeof updateDailySummary === 'function') updateDailySummary();
             }
         }
 
@@ -2206,6 +2312,50 @@
                 if (n > 0) { el.textContent = n; el.classList.remove('hidden'); }
                 else { el.classList.add('hidden'); }
             });
+        }
+
+        /* ===== لوحة ملخّص اليوم ===== */
+        function updateDailySummary() {
+            try {
+                if (!currentUser) return;
+                const strip = document.getElementById('daily-summary-strip');
+                if (!strip) return;
+                let allHistory = JSON.parse(localStorage.getItem('smart_calc_history_all') || '[]');
+                let list = currentUser.isAdmin ? allHistory : allHistory.filter(item => item.empUsername === currentUser.username);
+
+                // تاريخ اليوم بصيغة ar-SY لمطابقة حقل date المخزّن
+                const todayStr = new Date().toLocaleDateString('ar-SY');
+                const isToday = (rec) => String(rec.date || '').indexOf(todayStr) === 0;
+
+                const todayOps = list.filter(isToday);
+                const opsCount = todayOps.length;
+                // أرباح/عمولات اليوم = مجموع خانة fee لعمليات اليوم
+                let profit = 0;
+                todayOps.forEach(r => { profit += Number((r.data && r.data.fee) || 0); });
+
+                const openDebts = list.filter(r => Number(r.remaining) > 0);
+                const debtsCount = openDebts.length;
+                const totalRemaining = openDebts.reduce((s, r) => s + Number(r.remaining || 0), 0);
+
+                const todayISOStr = todayISO();
+                const overdueCount = openDebts.filter(r => r.dueDate && String(r.dueDate) < todayISOStr).length;
+
+                const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+                setTxt('ds-count', formatNum(opsCount, 0));
+                setTxt('ds-profit', formatNum(profit, 0));
+                setTxt('ds-debts', formatNum(debtsCount, 0) + ' / ' + formatNum(totalRemaining, 0));
+                setTxt('ds-overdue', formatNum(overdueCount, 0));
+
+                // تمييز بطاقة المتأخّر بالأحمر عند وجود ديون متأخّرة
+                const overdueCard = document.getElementById('ds-overdue');
+                if (overdueCard) {
+                    const box = overdueCard.closest('div');
+                    if (box) {
+                        if (overdueCount > 0) { box.classList.add('ring-2', 'ring-rose-400', 'animate-pulse'); }
+                        else { box.classList.remove('ring-2', 'ring-rose-400', 'animate-pulse'); }
+                    }
+                }
+            } catch (e) { /* تجاهل */ }
         }
 
         function toggleDebtsModal() {
@@ -2233,23 +2383,41 @@
                 return;
             }
             let html = '';
+            const _today = todayISO();
             debts.forEach(item => {
                 const badgeColor = item.type === 'buy' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300' : 'bg-sky-100 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300';
                 const payStatusLabel = item.payStatus === 'credit' ? 'دين كامل' : 'دفعة جزئية';
+                const _due = item.dueDate ? String(item.dueDate) : '';
+                const _overdue = _due && Number(item.remaining) > 0 && _due < _today;
+                const _dueSoon = _due && Number(item.remaining) > 0 && _due === _today;
+                const cardBorder = _overdue ? 'border-rose-400 dark:border-rose-700 ring-1 ring-rose-300 dark:ring-rose-800' : 'border-rose-200 dark:border-rose-900/60';
                 const phoneBtn = item.debtorPhone
                     ? `<button onclick="remindDebtWhatsApp(${item.id})" class="bg-green-50 hover:bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300 text-[11px] font-bold px-2.5 py-2 rounded-lg transition flex items-center gap-1.5"><i class="fa-brands fa-whatsapp"></i> تذكير</button>`
                     : '';
+                let dueLine = '';
+                if (_due) {
+                    if (_overdue) {
+                        dueLine = `<p class="text-[11px] font-black text-rose-600 dark:text-rose-300 mt-1"><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> متأخّر — استحقاق: ${_due}</p>`;
+                    } else if (_dueSoon) {
+                        dueLine = `<p class="text-[11px] font-black text-amber-600 dark:text-amber-300 mt-1"><i class="fa-solid fa-clock text-[9px]"></i> يستحق اليوم: ${_due}</p>`;
+                    } else {
+                        dueLine = `<p class="text-[11px] text-slate-500 dark:text-slate-300 mt-1"><i class="fa-solid fa-calendar-day text-[9px]"></i> تاريخ الاستحقاق: ${_due}</p>`;
+                    }
+                }
+                const overdueBadge = _overdue ? `<span class="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> متأخّر</span>` : '';
                 html += `
-                    <div class="bg-slate-50 dark:bg-slate-800 border border-rose-200 dark:border-rose-900/60 rounded-xl p-3 sm:p-4">
+                    <div class="bg-slate-50 dark:bg-slate-800 border ${cardBorder} rounded-xl p-3 sm:p-4">
                         <div class="flex justify-between items-start gap-2 flex-wrap">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-black ${badgeColor}">${item.typeName}</span>
                                 <h4 class="font-black text-slate-900 dark:text-white text-sm">${item.customer}</h4>
                                 <span class="bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-[10px] font-bold px-2 py-0.5 rounded">${payStatusLabel}</span>
+                                ${overdueBadge}
                             </div>
                             <p class="text-[11px] text-slate-500 dark:text-slate-300">${item.date}</p>
                         </div>
                         ${item.debtorPhone ? `<p class="text-[11px] text-slate-500 dark:text-slate-300 mt-1"><i class="fa-solid fa-phone text-[9px]"></i> ${item.debtorPhone}</p>` : ''}
+                        ${dueLine}
                         <div class="grid grid-cols-3 gap-2 mt-2 text-center">
                             <div class="bg-white dark:bg-slate-900 rounded-lg py-1.5"><p class="text-[9px] text-slate-400">الإجمالي</p><strong class="text-xs text-slate-800 dark:text-white">${formatNum(item.totalDue, 0)}</strong></div>
                             <div class="bg-white dark:bg-slate-900 rounded-lg py-1.5"><p class="text-[9px] text-slate-400">المدفوع</p><strong class="text-xs text-emerald-700 dark:text-emerald-300">${formatNum(item.paid, 0)}</strong></div>
@@ -2295,6 +2463,7 @@
             if (amt <= 0) { alert("الرجاء إدخال مبلغ صحيح."); return; }
             if (_applyPayment(id, amt)) {
                 renderDebtsList(); updateDebtsBadge();
+                if (typeof updateDailySummary === 'function') updateDailySummary();
                 alert("تم تسجيل الدفعة بنجاح!");
             }
         }
@@ -2306,6 +2475,7 @@
             if (!confirm("تأكيد تسديد كامل المبلغ المتبقي (" + formatNum(it.remaining, 0) + " ل.س)؟")) return;
             if (_applyPayment(id, it.remaining)) {
                 renderDebtsList(); updateDebtsBadge();
+                if (typeof updateDailySummary === 'function') updateDailySummary();
                 alert("تم تسديد الدين بالكامل! ✔");
             }
         }
@@ -2782,6 +2952,46 @@
             if (!ts || isNaN(ts)) { label.classList.add('hidden'); return; }
             timeEl.innerText = 'آخر تحديث للأسعار: ' + new Date(ts).toLocaleString('ar-SY');
             label.classList.remove('hidden');
+        }
+    </script>
+
+    <!-- تسجيل Service Worker لتفعيل التثبيت (PWA) والعمل دون إنترنت -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').catch(function (err) {
+                    console.warn('تعذّر تسجيل Service Worker:', err);
+                });
+            });
+        }
+
+        // —— زر تثبيت التطبيق (Android / Chrome / Edge) ——
+        let deferredInstallPrompt = null;
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const b = document.getElementById('install-app-btn');
+            if (b) b.classList.remove('hidden');
+        });
+        window.addEventListener('appinstalled', function () {
+            deferredInstallPrompt = null;
+            const b = document.getElementById('install-app-btn');
+            if (b) b.classList.add('hidden');
+        });
+        async function installApp() {
+            // إن كان مثبّتاً أصلاً
+            const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            if (standalone) { alert('التطبيق مثبّت وشغّال بالفعل ✔'); return; }
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                try { await deferredInstallPrompt.userChoice; } catch (e) {}
+                deferredInstallPrompt = null;
+                const b = document.getElementById('install-app-btn');
+                if (b) b.classList.add('hidden');
+            } else {
+                // تعليمات يدوية (آيفون Safari أو متصفّحات أخرى)
+                alert('لتثبيت التطبيق:\n\n• على الأندرويد (Chrome): افتح قائمة المتصفّح ⋮ ثم «تثبيت التطبيق / إضافة إلى الشاشة الرئيسية».\n• على الآيفون (Safari): زر المشاركة ⬆ ثم «إضافة إلى الشاشة الرئيسية».\n\nملاحظة: يجب فتح التطبيق عبر رابط https صالح.');
+            }
         }
     </script>
 </body>
